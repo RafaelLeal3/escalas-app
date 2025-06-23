@@ -342,7 +342,12 @@ const Header = ({ onTodayClick, onAboutClick }) => {
             <CalendarDays className="w-7 h-7 text-white mr-2" /><h1 className="text-lg font-bold flex-grow">Escalas</h1>
             <div className="relative ml-auto" ref={menuRef}>
                 <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2.5 rounded-full hover:bg-zinc-600 focus:outline-none transition-colors"><MoreVertical className="w-5 h-5 text-white" /></button>
-                {isMenuOpen && (<div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20"><a href="#" onClick={createMenuAction(onTodayClick)} className="block px-4 py-2 text-sm text-white hover:bg-gray-700">Hoje</a><a href="#" onClick={createMenuAction(onAboutClick)} className="block px-4 py-2 text-sm text-white hover:bg-gray-700">Sobre</a></div>)}
+                {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20">
+                        <button onClick={createMenuAction(onTodayClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Hoje</button>
+                        <button onClick={createMenuAction(onAboutClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Sobre</button>
+                    </div>
+                )}
             </div>
         </header>
     );
@@ -360,7 +365,7 @@ export default function App() {
     return (
         <div className="min-h-screen bg-[#1f2128] flex flex-col items-center py-4 px-4 font-sans text-white">
             <div className="w-full max-w-lg">
-                <Header onTodayClick={() => setCurrentDate(new Date())} onAboutClick={() => showSnackbar("Rafael Fogaça Productions! | Beta 1.0 | 2025")} />
+                <Header onTodayClick={() => setCurrentDate(new Date())} onAboutClick={() => showSnackbar("Rafael Leal Productions! | Beta 1.0 | 2025")} />
                 <main className="w-full mt-2">
                     <Legend />
                     <Calendar currentDate={currentDate} setCurrentDate={setCurrentDate} />
