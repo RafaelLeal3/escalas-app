@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MoreVertical, CalendarDays } from 'lucide-react';
+import { MoreVertical, CalendarDays, Save } from 'lucide-react';
 
 // --- Constantes ---
-const LOCAL_STORAGE_KEY = 'escalasAppNotes';
+const LEMBRETE_STORAGE_KEY = 'escalasAppLembretes';
+const SETTINGS_STORAGE_KEY = 'escalasAppSettings';
 
 // --- Constantes (Dados, Classes, etc.) ---
 const DATE_CLASS = { 0: "Dom", 1: "Seg", 2: "Ter", 3: "Qua", 4: "Qui", 5: "Sex", 6: "Sáb" };
@@ -49,17 +50,17 @@ const calculateSituation = (day, year, month, contEsc, contLet) => {
 
 // --- Componentes ---
 
-const NoteModal = ({ isOpen, onClose, selectedDate, currentEscala, currentLetra, initialNote, onSave, onClear }) => {
-    const [note, setNote] = useState('');
+const NoteModal = ({ isOpen, onClose, selectedDate, currentEscala, currentLetra, initialLembrete, onSave, onClear }) => {
+    const [lembrete, setLembrete] = useState('');
 
     useEffect(() => {
-        if (isOpen) setNote(initialNote || '');
-    }, [isOpen, initialNote]);
+        if (isOpen) setLembrete(initialLembrete || '');
+    }, [isOpen, initialLembrete]);
 
     if (!isOpen) return null;
 
     const handleSave = () => {
-        onSave(selectedDate, currentEscala, currentLetra, note);
+        onSave(selectedDate, currentEscala, currentLetra, lembrete);
         onClose();
     };
     
@@ -75,13 +76,13 @@ const NoteModal = ({ isOpen, onClose, selectedDate, currentEscala, currentLetra,
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-[#2D3141] rounded-lg shadow-xl p-6 w-full max-w-sm text-white flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-center">Nota para {formattedDate}</h2>
+                <h2 className="text-xl font-bold text-center">Lembrete para {formattedDate}</h2>
                 <p className="text-sm text-gray-300 text-center">{escalaLetraText}</p>
                 <textarea
                     className="w-full p-2 rounded-md bg-[#1f2128] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
-                    placeholder="Adicione a sua nota aqui..."
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Adicione o seu lembrete aqui..."
+                    value={lembrete}
+                    onChange={(e) => setLembrete(e.target.value)}
                 />
                 <div className="flex justify-end gap-2 mt-2">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-md font-semibold transition-colors">Cancelar</button>
@@ -93,7 +94,7 @@ const NoteModal = ({ isOpen, onClose, selectedDate, currentEscala, currentLetra,
     );
 };
 
-const DayCell = ({ day, situacao, isToday, onClick, note }) => {
+const DayCell = ({ day, situacao, isToday, onClick, lembrete }) => {
     if (day === " ") {
         return <div className="flex-1 h-[70px]"></div>;
     }
@@ -115,9 +116,9 @@ const DayCell = ({ day, situacao, isToday, onClick, note }) => {
             <div className="flex-grow flex items-center justify-center">
                  <span className="text-lg font-bold">{situacao || ' '}</span>
             </div>
-            {note && (
+            {lembrete && (
                 <div className="absolute bottom-0 left-0 right-0 text-center text-[10px] text-yellow-300 bg-black bg-opacity-40 px-1 py-0.5 truncate">
-                    {note}
+                    {lembrete}
                 </div>
             )}
         </div>
@@ -129,18 +130,17 @@ const Legend = () => (
         <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center">
             <div className="flex items-center"><div className={`w-2.5 h-2.5 rounded-sm mr-1.5 ${SITUATION_BG_COLORS['T']}`}></div><span className="text-xs">Trabalho</span></div>
             <div className="flex items-center"><div className={`w-2.5 h-2.5 rounded-sm mr-1.5 ${SITUATION_BG_COLORS['F']}`}></div><span className="text-xs">Folga</span></div>
-            <div className="flex items-center"><div className={`w-2.5 h-2.5 rounded-sm mr-1.5 ${SITUATION_BG_COLORS['N']}`}></div><span className="text-xs">Noturno</span></div>
+            <div className="flex items-center"><div className={`w-2.5 h-2.5 rounded-sm mr-1.5 ${SITUATION_BG_COLORS['N']}`}></div><span className="text-xs">Noite</span></div>
             <div className="flex items-center"><div className="w-2.5 h-2.5 rounded-sm mr-1.5 bg-yellow-400"></div><span className="text-xs">Hoje</span></div>
         </div>
     </div>
 );
 
-const Calendar = ({ currentDate, setCurrentDate }) => {
-    const [contEsc, setContEsc] = useState(1);
-    const [contLet, setContLet] = useState(1);
+const Calendar = ({ currentDate, setCurrentDate, escalaSettings, setEscalaSettings }) => {
+    const { contEsc, contLet } = escalaSettings;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalDate, setModalDate] = useState(null);
-    const [notes, setNotes] = useState({});
+    const [lembretes, setLembretes] = useState({});
     
     const [offset, setOffset] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -153,38 +153,38 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
 
     useEffect(() => {
         try {
-            const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (storedNotes) {
-                setNotes(JSON.parse(storedNotes));
+            const storedLembretes = localStorage.getItem(LEMBRETE_STORAGE_KEY);
+            if (storedLembretes) {
+                setLembretes(JSON.parse(storedLembretes));
             }
         } catch (error) {
-            console.error("Erro ao carregar notas do localStorage:", error);
+            console.error("Erro ao carregar lembretes do localStorage:", error);
         }
     }, []);
 
-    const handleSaveNote = useCallback((dateStr, esc, lettr, noteTxt) => {
-        setNotes(prevNotes => {
-            const newNotes = JSON.parse(JSON.stringify(prevNotes)); // Deep copy
-            if (!newNotes[dateStr]) {
-                newNotes[dateStr] = {};
+    const handleSaveLembrete = useCallback((dateStr, esc, lettr, lembreteTxt) => {
+        setLembretes(prevLembretes => {
+            const newLembretes = JSON.parse(JSON.stringify(prevLembretes)); 
+            if (!newLembretes[dateStr]) {
+                newLembretes[dateStr] = {};
             }
-            newNotes[dateStr][`${esc}_${lettr}`] = noteTxt;
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newNotes));
-            return newNotes;
+            newLembretes[dateStr][`${esc}_${lettr}`] = lembreteTxt;
+            localStorage.setItem(LEMBRETE_STORAGE_KEY, JSON.stringify(newLembretes));
+            return newLembretes;
         });
     }, []);
 
-    const handleClearNote = useCallback((dateStr, esc, lettr) => {
-        setNotes(prevNotes => {
-            const newNotes = JSON.parse(JSON.stringify(prevNotes)); // Deep copy
-            if (newNotes[dateStr] && newNotes[dateStr][`${esc}_${lettr}`]) {
-                delete newNotes[dateStr][`${esc}_${lettr}`];
-                if (Object.keys(newNotes[dateStr]).length === 0) {
-                    delete newNotes[dateStr];
+    const handleClearLembrete = useCallback((dateStr, esc, lettr) => {
+        setLembretes(prevLembretes => {
+            const newLembretes = JSON.parse(JSON.stringify(prevLembretes)); 
+            if (newLembretes[dateStr] && newLembretes[dateStr][`${esc}_${lettr}`]) {
+                delete newLembretes[dateStr][`${esc}_${lettr}`];
+                if (Object.keys(newLembretes[dateStr]).length === 0) {
+                    delete newLembretes[dateStr];
                 }
             }
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newNotes));
-            return newNotes;
+            localStorage.setItem(LEMBRETE_STORAGE_KEY, JSON.stringify(newLembretes));
+            return newLembretes;
         });
     }, []);
 
@@ -207,23 +207,22 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
 
     const triggerMonthChange = useCallback((direction) => {
         if (isAnimating) return;
-
         setIsTransitioning(true);
         const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
         const finalOffset = direction === 1 ? -containerWidth : containerWidth;
-        
         setOffset(finalOffset);
         setIsAnimating(true);
     }, [isAnimating]);
 
     const handleEscalaChange = (delta) => {
-        setContEsc(prev => (prev + delta > 4 ? 1 : (prev + delta < 1 ? 4 : prev + delta)));
-        setContLet(1);
+        const newContEsc = contEsc + delta > 4 ? 1 : (contEsc + delta < 1 ? 4 : contEsc + delta);
+        setEscalaSettings({ contEsc: newContEsc, contLet: 1 });
     };
 
     const handleLetraChange = (delta) => {
         const limits = { 1: 9, 2: 8, 3: 18, 4: 8 };
-        setContLet(prev => (prev + delta > limits[contEsc] ? 1 : (prev + delta < 1 ? limits[contEsc] : prev + delta)));
+        const newContLet = contLet + delta > limits[contEsc] ? 1 : (contLet + delta < 1 ? limits[contEsc] : contLet + delta);
+        setEscalaSettings(prev => ({ ...prev, contLet: newContLet }));
     };
 
     const onTouchStart = (e) => {
@@ -236,23 +235,16 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
     const onTouchMove = (e) => {
         if (isAnimating) return;
         const deltaX = e.touches[0].clientX - touchStartX.current;
-        if (!didDrag.current && Math.abs(deltaX) > 5) {
-            didDrag.current = true;
-        }
-        if (didDrag.current) {
-            setOffset(deltaX);
-        }
+        if (!didDrag.current && Math.abs(deltaX) > 5) didDrag.current = true;
+        if (didDrag.current) setOffset(deltaX);
     };
 
     const onTouchEnd = () => {
         if (isAnimating) return;
-        
         const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
         const swipeThreshold = containerWidth / 4;
-
         if (Math.abs(offset) > swipeThreshold) {
-            const direction = offset < 0 ? 1 : -1;
-            triggerMonthChange(direction);
+            triggerMonthChange(offset < 0 ? 1 : -1);
         } else {
             setIsTransitioning(true);
             setOffset(0); 
@@ -261,12 +253,9 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
     
     const handleTransitionEnd = () => {
         if (!isAnimating) return; 
-
         const direction = offset < 0 ? 1 : -1;
-        
         const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1);
         setCurrentDate(newDate);
-        
         setIsTransitioning(false);
         setOffset(0);
         setIsAnimating(false);
@@ -287,9 +276,8 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
                     const isToday = day !== " " && new Date().getDate() === day && new Date().getMonth() === date.getMonth() && new Date().getFullYear() === date.getFullYear();
                     const daySituacao = (day !== " ") ? SITUACAO_CLASS[contEsc - 1]?.[calculateSituation(day, date.getFullYear(), date.getMonth() + 1, contEsc, contLet)] : "";
                     const dateString = (day !== " ") ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : "";
-                    const dayNote = notes[dateString]?.[`${contEsc}_${contLet}`];
-
-                    return <DayCell key={`${date.getTime()}-${index}`} day={day} situacao={daySituacao} isToday={isToday} onClick={() => handleDayClick(day, date)} note={dayNote} />;
+                    const dayLembrete = lembretes[dateString]?.[`${contEsc}_${contLet}`];
+                    return <DayCell key={`${date.getTime()}-${index}`} day={day} situacao={daySituacao} isToday={isToday} onClick={() => handleDayClick(day, date)} lembrete={dayLembrete} />;
                 })}
             </div>
         );
@@ -301,34 +289,25 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
 
     return (
         <div className="flex flex-col items-center w-full rounded-lg overflow-hidden shadow-lg bg-[#1f2128]">
-            <NoteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} selectedDate={modalDate} currentEscala={contEsc} currentLetra={contLet} initialNote={notes[modalDate]?.[`${contEsc}_${contLet}`] || ''} onSave={handleSaveNote} onClear={handleClearNote} />
-            
+            <NoteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} selectedDate={modalDate} currentEscala={contEsc} currentLetra={contLet} initialLembrete={lembretes[modalDate]?.[`${contEsc}_${contLet}`] || ''} onSave={handleSaveLembrete} onClear={handleClearLembrete} />
             <div className="relative z-10 w-full" onTouchStart={(e) => e.stopPropagation()}>
                 <div className="w-full bg-[#2D3141] rounded-t-lg p-2 flex items-center justify-between">
                     <button onClick={() => handleEscalaChange(-1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                    <div className="text-white text-lg font-semibold">{ESCALA_CLASS[contEsc]}</div>
+                    <div className="text-white text-xl font-bold">{ESCALA_CLASS[contEsc]}</div>
                     <button onClick={() => handleEscalaChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
                 <div className="w-full bg-[#2D3141] -mt-1 p-2 flex items-center justify-between">
                     <button onClick={() => handleLetraChange(-1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                    <div className="text-white text-lg font-semibold">{LETRA_CLASS[contEsc - 1]?.[contLet - 1] || '-'}</div>
+                    <div className="text-white text-xl font-bold">{LETRA_CLASS[contEsc - 1]?.[contLet - 1] || '-'}</div>
                     <button onClick={() => handleLetraChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
                 <div className="w-full bg-[#2D3141] rounded-b-lg p-2 flex items-center justify-between">
-                    <button onClick={() => triggerMonthChange(-1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <div className="text-white text-xl font-semibold text-center select-none">
-                        {MONTH_CLASS[currentDate.getMonth() + 1]} {currentDate.getFullYear()}
-                    </div>
-                    <button onClick={() => triggerMonthChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
+                    <button onClick={() => triggerMonthChange(-1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                    <div className="text-white text-2xl font-bold text-center select-none">{MONTH_CLASS[currentDate.getMonth() + 1]} {currentDate.getFullYear()}</div>
+                    <button onClick={() => triggerMonthChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
             </div>
-
             <div className="w-full grid grid-cols-7 bg-[#2D3141] text-white text-sm font-bold h-[40px] rounded-t-md mt-2">{Object.values(DATE_CLASS).map(dayName => <div key={dayName} className="flex items-center justify-center h-full w-full">{dayName}</div>)}</div>
-            
             <div ref={containerRef} className="relative w-full overflow-hidden bg-[#2D3141] cursor-grab" style={{ height: '440px', touchAction: 'none' }} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
                 <div onTransitionEnd={handleTransitionEnd} className="calendar-filmstrip" style={{width: '300%', display: 'flex', transform: `translateX(calc(-${100/3}% + ${offset}px))`, transition: isTransitioning ? `transform ${animationDuration}ms ease-out` : 'none'}}>
                     <div className="calendar-page">{renderGridCells(prevMonthData)}</div>
@@ -340,7 +319,7 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
     );
 };
 
-const Header = ({ onTodayClick, onAboutClick }) => {
+const Header = ({ onTodayClick, onAboutClick, onSaveSettings }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -361,9 +340,14 @@ const Header = ({ onTodayClick, onAboutClick }) => {
     return (
         <header className="w-full px-4 flex items-center bg-[#2D3141] py-3 rounded-lg shadow-md">
             <CalendarDays className="w-7 h-7 text-white mr-2" /><h1 className="text-lg font-bold flex-grow">Escalas</h1>
-            <div className="relative ml-auto" ref={menuRef}>
-                <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2.5 rounded-full hover:bg-zinc-600 focus:outline-none transition-colors"><MoreVertical className="w-5 h-5 text-white" /></button>
-                {isMenuOpen && (<div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20"><button onClick={createMenuAction(onTodayClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Hoje</button><button onClick={createMenuAction(onAboutClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Sobre</button></div>)}
+            <div className="flex items-center ml-auto">
+                <button onClick={onSaveSettings} className="p-2.5 rounded-full hover:bg-zinc-600 focus:outline-none transition-colors" title="Salvar escala atual">
+                    <Save className="w-5 h-5 text-white" />
+                </button>
+                <div className="relative" ref={menuRef}>
+                    <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2.5 rounded-full hover:bg-zinc-600 focus:outline-none transition-colors"><MoreVertical className="w-5 h-5 text-white" /></button>
+                    {isMenuOpen && (<div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20"><button onClick={createMenuAction(onTodayClick)} className="w-full text-left block px-4 py-3 text-base text-white hover:bg-gray-700">Hoje</button><button onClick={createMenuAction(onAboutClick)} className="w-full text-left block px-4 py-3 text-base text-white hover:bg-gray-700">Sobre</button></div>)}
+                </div>
             </div>
         </header>
     );
@@ -372,6 +356,28 @@ const Header = ({ onTodayClick, onAboutClick }) => {
 export default function App() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+    const [escalaSettings, setEscalaSettings] = useState({ contEsc: 1, contLet: 1 });
+
+    useEffect(() => {
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (savedSettings) {
+                setEscalaSettings(JSON.parse(savedSettings));
+            }
+        } catch (error) {
+            console.error("Erro ao carregar configurações do localStorage:", error);
+        }
+    }, []);
+
+    const handleSaveSettings = () => {
+        try {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(escalaSettings));
+            showSnackbar("Escala salva com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar configurações no localStorage:", error);
+            showSnackbar("Erro ao salvar escala.");
+        }
+    };
 
     const showSnackbar = (message) => {
         setSnackbar({ open: true, message });
@@ -381,10 +387,10 @@ export default function App() {
     return (
         <div className="min-h-screen bg-[#1f2128] flex flex-col items-center py-4 px-4 font-sans text-white">
             <div className="w-full max-w-lg">
-                <Header onTodayClick={() => setCurrentDate(new Date())} onAboutClick={() => showSnackbar("Rafael Leal Productions! | Beta 1.0 | 2025")} />
+                <Header onTodayClick={() => setCurrentDate(new Date())} onAboutClick={() => showSnackbar("Rafael Leal Productions! | Beta 1.0 | 2025")} onSaveSettings={handleSaveSettings} />
                 <main className="w-full mt-2">
                     <Legend />
-                    <Calendar currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                    <Calendar currentDate={currentDate} setCurrentDate={setCurrentDate} escalaSettings={escalaSettings} setEscalaSettings={setEscalaSettings} />
                 </main>
             </div>
             {snackbar.open && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg z-50">{snackbar.message}</div>}
