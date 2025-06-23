@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/escalas-app/static/css/main.a57433bd.css",
-    "main.js": "/escalas-app/static/js/main.ee9472dc.js",
+    "main.js": "/escalas-app/static/js/main.54e9d8e4.js",
     "static/js/453.fe08a8ef.chunk.js": "/escalas-app/static/js/453.fe08a8ef.chunk.js",
     "index.html": "/escalas-app/index.html",
     "main.a57433bd.css.map": "/escalas-app/static/css/main.a57433bd.css.map",
-    "main.ee9472dc.js.map": "/escalas-app/static/js/main.ee9472dc.js.map",
+    "main.54e9d8e4.js.map": "/escalas-app/static/js/main.54e9d8e4.js.map",
     "453.fe08a8ef.chunk.js.map": "/escalas-app/static/js/453.fe08a8ef.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.a57433bd.css",
-    "static/js/main.ee9472dc.js"
+    "static/js/main.54e9d8e4.js"
   ]
 }
