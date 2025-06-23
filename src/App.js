@@ -205,6 +205,17 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
         return { grid, date };
     }, []);
 
+    const triggerMonthChange = useCallback((direction) => {
+        if (isAnimating) return;
+
+        setIsTransitioning(true);
+        const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
+        const finalOffset = direction === 1 ? -containerWidth : containerWidth;
+        
+        setOffset(finalOffset);
+        setIsAnimating(true);
+    }, [isAnimating]);
+
     const handleEscalaChange = (delta) => {
         setContEsc(prev => (prev + delta > 4 ? 1 : (prev + delta < 1 ? 4 : prev + delta)));
         setContLet(1);
@@ -235,15 +246,15 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
 
     const onTouchEnd = () => {
         if (isAnimating) return;
-        setIsTransitioning(true);
+        
         const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
         const swipeThreshold = containerWidth / 4;
 
         if (Math.abs(offset) > swipeThreshold) {
-            const finalOffset = offset < 0 ? -containerWidth : containerWidth;
-            setOffset(finalOffset);
-            setIsAnimating(true); 
+            const direction = offset < 0 ? 1 : -1;
+            triggerMonthChange(direction);
         } else {
+            setIsTransitioning(true);
             setOffset(0); 
         }
     };
@@ -303,7 +314,17 @@ const Calendar = ({ currentDate, setCurrentDate }) => {
                     <div className="text-white text-lg font-semibold">{LETRA_CLASS[contEsc - 1]?.[contLet - 1] || '-'}</div>
                     <button onClick={() => handleLetraChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors"><svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
-                <div className="w-full bg-[#2D3141] rounded-b-lg p-3 text-white text-xl font-semibold text-center select-none">{MONTH_CLASS[currentDate.getMonth() + 1]} {currentDate.getFullYear()}</div>
+                <div className="w-full bg-[#2D3141] rounded-b-lg p-2 flex items-center justify-between">
+                    <button onClick={() => triggerMonthChange(-1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div className="text-white text-xl font-semibold text-center select-none">
+                        {MONTH_CLASS[currentDate.getMonth() + 1]} {currentDate.getFullYear()}
+                    </div>
+                    <button onClick={() => triggerMonthChange(1)} className="p-3 rounded-full hover:bg-gray-700 transition-colors">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <div className="w-full grid grid-cols-7 bg-[#2D3141] text-white text-sm font-bold h-[40px] rounded-t-md mt-2">{Object.values(DATE_CLASS).map(dayName => <div key={dayName} className="flex items-center justify-center h-full w-full">{dayName}</div>)}</div>
@@ -342,12 +363,7 @@ const Header = ({ onTodayClick, onAboutClick }) => {
             <CalendarDays className="w-7 h-7 text-white mr-2" /><h1 className="text-lg font-bold flex-grow">Escalas</h1>
             <div className="relative ml-auto" ref={menuRef}>
                 <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2.5 rounded-full hover:bg-zinc-600 focus:outline-none transition-colors"><MoreVertical className="w-5 h-5 text-white" /></button>
-                {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20">
-                        <button onClick={createMenuAction(onTodayClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Hoje</button>
-                        <button onClick={createMenuAction(onAboutClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Sobre</button>
-                    </div>
-                )}
+                {isMenuOpen && (<div className="absolute right-0 mt-2 w-48 bg-[#20303e] rounded-md shadow-lg py-1 z-20"><button onClick={createMenuAction(onTodayClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Hoje</button><button onClick={createMenuAction(onAboutClick)} className="w-full text-left block px-4 py-2 text-sm text-white hover:bg-gray-700">Sobre</button></div>)}
             </div>
         </header>
     );
